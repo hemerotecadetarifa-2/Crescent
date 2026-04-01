@@ -74,7 +74,7 @@ if st.button("Calculate"):
         output = buffer.getvalue()
 
         st.subheader("Results")
-        st.text(output)
+       st.code(output, language="text")
 
     except Exception as e:
         sys.stdout = sys.__stdout__
