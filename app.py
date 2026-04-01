@@ -52,7 +52,6 @@ for i, nm in enumerate(lunations):
     options.append(label)
 
 selected = st.selectbox("Select lunation", options)
-
 lunation_index = int(selected.split("→")[0].strip())
 
 # -------------------------
@@ -65,7 +64,7 @@ if st.button("🚀 Calculate"):
     long_rad = lon * PI / 180
     fi = lat * PI / 180
 
-    with st.spinner("Computing... please wait"):
+    with st.spinner("Computing astronomical visibility..."):
 
         buffer = io.StringIO()
         sys.stdout = buffer
@@ -76,13 +75,39 @@ if st.button("🚀 Calculate"):
             output = buffer.getvalue()
 
             # -------------------------
-            # RESULTS DISPLAY
+            # 🔍 EXTRAER INFO CLAVE
+            # -------------------------
+            visibility_text = "Unknown"
+
+            if "Very likely" in output:
+                visibility_text = "🟢 Very likely visible"
+            elif "Likely" in output:
+                visibility_text = "🟡 Likely visible"
+            elif "Difficult" in output:
+                visibility_text = "🟠 Difficult"
+            elif "Very difficult" in output:
+                visibility_text = "🔴 Very difficult"
+
+            # -------------------------
+            # 📊 RESUMEN VISUAL
             # -------------------------
             st.success("Calculation completed")
 
-            st.subheader("📊 Results")
+            st.subheader("🌟 Visibility Summary")
 
-            # Caja visual bonita
+            colA, colB = st.columns(2)
+
+            with colA:
+                st.metric("Visibility", visibility_text)
+
+            with colB:
+                st.metric("Year", year)
+
+            # -------------------------
+            # 📜 RESULTADO COMPLETO
+            # -------------------------
+            st.subheader("📄 Full Calculation Output")
+
             st.code(output, language="text")
 
         except Exception as e:
