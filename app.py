@@ -1,6 +1,8 @@
 import streamlit as st
 import io
 import sys
+import pandas as pd
+import re
 
 from crescent_moon import compute_visibility, compute_new_moons, PI
 
@@ -55,6 +57,26 @@ selected = st.selectbox("Select lunation", options)
 lunation_index = int(selected.split("→")[0].strip())
 
 # -------------------------
+# FUNCIÓN PARA EXTRAER TABLA
+# -------------------------
+def extract_table(output):
+    lines = output.split("\n")
+    data = []
+
+    for line in lines:
+        # Detecta filas con números (las de la tabla)
+        if re.match(r"\s*\d+\.\d+", line):
+            parts = re.split(r"\s{2,}", line.strip())
+            if len(parts) >= 6:
+                data.append(parts)
+
+    if not data:
+        return None
+
+    df = pd.DataFrame(data)
+    return df
+
+# -------------------------
 # RUN BUTTON
 # -------------------------
 st.divider()
@@ -75,40 +97,36 @@ if st.button("🚀 Calculate"):
             output = buffer.getvalue()
 
             # -------------------------
-            # 🔍 EXTRAER INFO CLAVE
-            # -------------------------
-            visibility_text = "Unknown"
-
-            if "Very likely" in output:
-                visibility_text = "🟢 Very likely visible"
-            elif "Likely" in output:
-                visibility_text = "🟡 Likely visible"
-            elif "Difficult" in output:
-                visibility_text = "🟠 Difficult"
-            elif "Very difficult" in output:
-                visibility_text = "🔴 Very difficult"
-
-            # -------------------------
-            # 📊 RESUMEN VISUAL
+            # RESUMEN
             # -------------------------
             st.success("Calculation completed")
 
-            st.subheader("🌟 Visibility Summary")
-
-            colA, colB = st.columns(2)
-
-            with colA:
-                st.metric("Visibility", visibility_text)
-
-            with colB:
-                st.metric("Year", year)
+            if "Very likely" in output:
+                st.success("🟢 Very likely visible")
+            elif "Likely" in output:
+                st.info("🟡 Likely visible")
+            elif "Difficult" in output:
+                st.warning("🟠 Difficult visibility")
+            elif "Very difficult" in output:
+                st.error("🔴 Very difficult visibility")
 
             # -------------------------
-            # 📜 RESULTADO COMPLETO
+            # TABLA LIMPIA
             # -------------------------
-            st.subheader("📄 Full Calculation Output")
+            st.subheader("📊 Visibility Table")
 
-            st.code(output, language="text")
+            df = extract_table(output)
+
+            if df is not None:
+                st.dataframe(df, use_container_width=True)
+            else:
+                st.warning("No structured table detected")
+
+            # -------------------------
+            # TEXTO COMPLETO
+            # -------------------------
+            with st.expander("📄 Full raw output"):
+                st.code(output)
 
         except Exception as e:
             sys.stdout = sys.__stdout__
