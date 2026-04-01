@@ -57,23 +57,55 @@ selected = st.selectbox("Select lunation", options)
 lunation_index = int(selected.split("→")[0].strip())
 
 # -------------------------
-# FUNCIÓN PARA EXTRAER TABLA
+# FUNCIÓN PARA EXTRAER TABLA CON FECHA
 # -------------------------
 def extract_table(output):
     lines = output.split("\n")
     data = []
+    current_date = None
 
     for line in lines:
-        # Detecta filas con números (las de la tabla)
+
+        # Detectar fecha
+        if "Date (prime meridian)" in line:
+            match = re.search(r"(\d+/\d+/\d+)", line)
+            if match:
+                current_date = match.group(1)
+
+        # Detectar filas de datos
         if re.match(r"\s*\d+\.\d+", line):
             parts = re.split(r"\s{2,}", line.strip())
+
             if len(parts) >= 6:
-                data.append(parts)
+                row = {
+                    "Date": current_date,
+                    "Sun_dep": parts[0],
+                    "Vis_coef": parts[1],
+                    "Altitude": parts[2],
+                    "Time_UT": parts[3],
+                    "Date_PM": parts[4],
+                    "Az_diff": parts[5],
+                }
+
+                if len(parts) > 6:
+                    row["Time_local"] = parts[6]
+                if len(parts) > 7:
+                    row["Date_local"] = parts[7]
+                if len(parts) > 8:
+                    row["Age_h"] = parts[8]
+
+                data.append(row)
 
     if not data:
         return None
 
     df = pd.DataFrame(data)
+
+    # Ordenar correctamente
+    if "Sun_dep" in df.columns:
+        df["Sun_dep"] = pd.to_numeric(df["Sun_dep"], errors="coerce")
+        df = df.sort_values(by=["Date", "Sun_dep"])
+
     return df
 
 # -------------------------
@@ -97,7 +129,7 @@ if st.button("🚀 Calculate"):
             output = buffer.getvalue()
 
             # -------------------------
-            # RESUMEN
+            # RESUMEN VISUAL
             # -------------------------
             st.success("Calculation completed")
 
@@ -123,7 +155,7 @@ if st.button("🚀 Calculate"):
                 st.warning("No structured table detected")
 
             # -------------------------
-            # TEXTO COMPLETO
+            # OUTPUT COMPLETO
             # -------------------------
             with st.expander("📄 Full raw output"):
                 st.code(output)
