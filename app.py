@@ -1,16 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Apr  1 13:38:54 2026
-
-@author: wence
-"""
-
 import streamlit as st
 import io
 import sys
 
 from crescent_moon import compute_visibility, compute_new_moons, PI
 
+# -------------------------
+# CONFIG
+# -------------------------
 st.set_page_config(page_title="Crescent Moon", layout="wide")
 
 st.title("🌙 Crescent Moon Visibility Calculator")
@@ -18,6 +14,8 @@ st.title("🌙 Crescent Moon Visibility Calculator")
 # -------------------------
 # INPUTS
 # -------------------------
+st.subheader("Input parameters")
+
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -60,22 +58,33 @@ lunation_index = int(selected.split("→")[0].strip())
 # -------------------------
 # RUN BUTTON
 # -------------------------
-if st.button("Calculate"):
+st.divider()
+
+if st.button("🚀 Calculate"):
 
     long_rad = lon * PI / 180
     fi = lat * PI / 180
 
-    buffer = io.StringIO()
-    sys.stdout = buffer
+    with st.spinner("Computing... please wait"):
 
-    try:
-        compute_visibility(long_rad, fi, int(year), height, humidity, prob, lunation_index)
-        sys.stdout = sys.__stdout__
-        output = buffer.getvalue()
+        buffer = io.StringIO()
+        sys.stdout = buffer
 
-        st.subheader("Results")
-       st.code(output, language="text")
+        try:
+            compute_visibility(long_rad, fi, int(year), height, humidity, prob, lunation_index)
+            sys.stdout = sys.__stdout__
+            output = buffer.getvalue()
 
-    except Exception as e:
-        sys.stdout = sys.__stdout__
-        st.error(f"Error: {e}")
+            # -------------------------
+            # RESULTS DISPLAY
+            # -------------------------
+            st.success("Calculation completed")
+
+            st.subheader("📊 Results")
+
+            # Caja visual bonita
+            st.code(output, language="text")
+
+        except Exception as e:
+            sys.stdout = sys.__stdout__
+            st.error(f"Error: {e}")
